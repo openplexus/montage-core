@@ -2,14 +2,22 @@ import createError from 'http-errors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
+import express, { Request, Response, NextFunction } from 'express';
+import dotenv from 'dotenv';
+import { connectDB } from './config/database';
 
-import express from 'express';
-import {indexRouter} from './routes/index';
-import {usersRouter} from './routes/users';
+import { indexRouter } from './routes/index';
+import { usersRouter } from './routes/users';
 
-const router = express.Router();
+interface HttpError extends Error {
+  status?: number;
+}
 
-let app = express();
+dotenv.config();
+const app = express();
+
+// Connect to MongoDB
+connectDB();
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -21,19 +29,24 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 // catch 404 and forward to error handler
-app.use(function(req: any, res: any, next: any) {
+app.use((req: Request, res: Response, next: NextFunction) => {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err: any, req: any, res: any, next: any) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+app.use((err: HttpError, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = err.status || 500;
+  const message = err.message || 'Internal Server Error';
+  
+  // only provide error stack in development
+  const errorDetails = app.get('env') === 'development' ? err.stack : {};
 
-  // render the error page
-  res.status(err.status ?? 500);
-  res.render('error');
+  res.status(statusCode).json({
+    error: {
+      message,
+      ...(errorDetails && { details: errorDetails })
+    }
+  });
 });
 
-module.exports = app;
+export = app;
