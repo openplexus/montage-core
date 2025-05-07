@@ -60,19 +60,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters long'],
-    validate: {
-      validator: function(value: string) {
-        // At least one uppercase letter, one lowercase letter, one number, and one special character
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(value);
-      },
-      message: 'Password must meet all of the following requirements:\n' +
-               '- At least 8 characters long\n' +
-               '- At least one uppercase letter (A-Z)\n' +
-               '- At least one lowercase letter (a-z)\n' +
-               '- At least one number (0-9)\n' +
-               '- At least one special character (@$!%*?&)'
-    }
+    minlength: [8, 'Password must be at least 8 characters long']
   }
 }, {
   timestamps: true,
@@ -83,6 +71,25 @@ const userSchema = new mongoose.Schema({
       return ret;
     }
   }
+});
+
+// Password validation
+userSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(this.password)) {
+      const err = new Error(
+        'Password must meet all of the following requirements:\n' +
+        '- At least 8 characters long\n' +
+        '- At least one uppercase letter (A-Z)\n' +
+        '- At least one lowercase letter (a-z)\n' +
+        '- At least one number (0-9)\n' +
+        '- At least one special character (@$!%*?&)'
+      );
+      return next(err);
+    }
+  }
+  next();
 });
 
 // Hash password before saving

@@ -9,7 +9,11 @@
     "start": "ts-node ./bin/www.ts",
     "dev": "ts-node-dev --respawn --transpile-only ./bin/www.ts",
     "build": "tsc",
-    "serve": "node ./dist/bin/www.js"
+    "serve": "node ./dist/bin/www.js",
+    "test": "jest --detectOpenHandles --forceExit",
+    "test:coverage": "jest --coverage --detectOpenHandles --forceExit",
+    "test:watch": "jest --watch",
+    "test:ci": "jest --ci --coverage --detectOpenHandles --forceExit"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -28,9 +32,15 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/debug": "^4.1.12",
     "@types/express": "^5.0.1",
+    "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.14.1",
+    "@types/supertest": "^6.0.3",
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.1.4",
+    "supertest": "^7.1.0",
+    "ts-jest": "^29.3.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "tslib": "^2.8.1",

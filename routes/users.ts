@@ -67,8 +67,8 @@ const register: RequestHandler = async (req, res, next): Promise<void> => {
   }
 };
 
-// Login user
-const login: RequestHandler = async (req, res, next) => {
+// Authenticate user
+const authenticate: RequestHandler = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -85,24 +85,35 @@ const login: RequestHandler = async (req, res, next) => {
   }
 };
 
-// Get current user profile (protected route)
-const getProfile: RequestHandler = (req, res, next) => {
+// Get user profile by username (public route)
+const getUserProfile: RequestHandler = async (req, res, next) => {
   try {
-    const authReq = req as AuthRequest;
-    if (!authReq.user) {
-      res.status(401).json({ error: 'User not found' });
+    const username = req.params.username;
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
       return;
     }
-    res.json(authReq.user);
+
+    res.json(user);
   } catch (error) {
     next(error);
   }
 };
 
 // Update user profile (protected route)
-const updateProfile: RequestHandler = async (req, res, next): Promise<void> => {
+const updateProfile: RequestHandler = async (req, res, next) => {
   try {
     const authReq = req as AuthRequest;
+    const requestedUsername = req.params.username;
+
+    // Check if the authenticated user matches the requested username
+    if (!authReq.user || authReq.user.username !== requestedUsername) {
+      res.status(403).json({ error: 'You can only update your own profile' });
+      return;
+    }
+
     const updates = Object.keys(req.body);
     const allowedUpdates = ['email', 'password', 'firstName', 'lastName', 'username'] as const;
     const isValidOperation = updates.every(update => allowedUpdates.includes(update as typeof allowedUpdates[number]));
@@ -112,15 +123,10 @@ const updateProfile: RequestHandler = async (req, res, next): Promise<void> => {
       return;
     }
 
-    if (!authReq.user) {
-      res.status(401).json({ error: 'User not found' });
-      return;
-    }
-
     // Check if username or email is being updated and if it's already taken
     if (req.body.username || req.body.email) {
       const existingUser = await User.findOne({
-        _id: { $ne: authReq.user._id }, // exclude current user
+        _id: { $ne: authReq.user._id },
         $or: [
           ...(req.body.email ? [{ email: req.body.email }] : []),
           ...(req.body.username ? [{ username: req.body.username }] : [])
@@ -166,14 +172,8 @@ const updateProfile: RequestHandler = async (req, res, next): Promise<void> => {
   }
 };
 
-// Logout user (protected route)
-const logout: RequestHandler = (req, res) => {
-  res.json({ message: 'Logged out successfully' });
-};
-
 // Routes
 usersRouter.post('/register', register);
-usersRouter.post('/login', login);
-usersRouter.get('/me', auth, getProfile);
-usersRouter.patch('/me', auth, updateProfile);
-usersRouter.post('/logout', auth, logout);
+usersRouter.post('/auth', authenticate);
+usersRouter.get('/:username', getUserProfile);
+usersRouter.patch('/:username', auth, updateProfile);

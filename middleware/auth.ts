@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import { User, IUser } from '../models/User';
+import mongoose from 'mongoose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 export interface AuthRequest extends Request {
-  user?: IUser;
+  user?: IUser & { _id: mongoose.Types.ObjectId };
   token?: string;
 }
 
@@ -35,14 +36,14 @@ export const auth: RequestHandler = async (req: AuthRequest, res, next) => {
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-      const user = await User.findById(decoded.userId);
+      const user = await User.findById(decoded.userId).exec();
 
       if (!user) {
         res.status(401).json({ error: 'User not found' });
         return;
       }
 
-      req.user = user;
+      req.user = user as IUser & { _id: mongoose.Types.ObjectId };
       req.token = token;
       next();
     } catch (jwtError) {

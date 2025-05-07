@@ -8,6 +8,7 @@ import { connectDB } from './config/database';
 
 import { indexRouter } from './routes/index';
 import { usersRouter } from './routes/users';
+import { expendituresRouter } from './routes/expenditures';
 
 interface HttpError extends Error {
   status?: number;
@@ -27,6 +28,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/expenditures', expendituresRouter);
 
 // catch 404 and forward to error handler
 app.use((req: Request, res: Response, next: NextFunction) => {
